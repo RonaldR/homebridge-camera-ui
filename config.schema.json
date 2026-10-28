@@ -386,8 +386,7 @@
                 "title": "Video Source",
                 "type": "string",
                 "placeholder": "-i rtsp://username:password@example.com:554",
-                "required": true,
-                "description": "Here you can set a custom video source for HKSV recordings only."
+                "description": "Here you can set a custom video source for HKSV recordings only. If not set, the video source of the camera is used."
               },
               "maxWidth": {
                 "title": "Maximum Width",
