@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# v6.0.1 - 2026-10-28
+
+## Bugfixes
+- `hksvConfig.source` is no longer required in the plugin settings, which caused "Config validation failed"
+
+## Other Changes
+- Updated the README badges and funding links
+
 # v6.0.0 - 2026-10-28
 
 ## Breaking Changes
