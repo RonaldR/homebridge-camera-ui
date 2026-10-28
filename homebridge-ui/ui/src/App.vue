@@ -5,7 +5,7 @@ v-app.app.tw-p-4
     h5 Welcome to 
     h1.subtitle camera.ui
     .tw-my-3.text-muted User Interface for RTSP capable cameras.
-    a.github-link(href="https://github.com/SeydX/homebridge-camera-ui" target="_blank")
+    a.github-link(href="https://github.com/RonaldR/homebridge-camera-ui" target="_blank")
       v-icon.text-default.tw-mr-1(style="margin-top: -3px;") {{ icons['mdiGithub'] }} 
       | Github
     .tw-mt-3

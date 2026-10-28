@@ -1,6 +1,7 @@
 'use-strict';
 
 import CameraUI from 'camera.ui';
+import LoggerService from 'camera.ui/src/services/logger/logger.service.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,17 +15,48 @@ import InterfaceSwitch from './accessories/switch.js';
 
 import Config from '../services/config/config.service.js';
 import Handler from './services/handler.service.js';
+import MotionPolling from './services/polling.service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = fs.readJsonSync(path.resolve(__dirname, '../package.json'));
 
-const PLUGIN_NAME = 'homebridge-camera-ui';
+const PLUGIN_NAME = 'homebridge-camera-ui-v2';
 const PLATFORM_NAME = 'CameraUI';
 const ENV_OPTIONS = {
-  moduleName: 'homebridge-camera-ui',
+  moduleName: 'homebridge-camera-ui-v2',
   moduleVersion: packageJson.version,
   global: true,
   sudo: true,
+};
+
+const SYSTEM_WATCH_INTERVAL = 30 * 1000;
+const DISK_USAGE_INTERVAL = 5 * 60 * 1000;
+
+// camera.ui collects system stats for its dashboard every 30 seconds, even if nobody has the interface open.
+// Only collect them while the interface is open, the disk space (recordings are skipped below 1 GB) is
+// still checked every 5 minutes.
+const throttleSystemWatcher = (Socket) => {
+  const watchSystem = Socket?.watchSystem;
+
+  if (typeof watchSystem !== 'function') {
+    return;
+  }
+
+  let lastDiskUsageCheck = Date.now();
+
+  Socket.watchSystem = async () => {
+    if (Socket.io?.engine?.clientsCount > 0) {
+      lastDiskUsageCheck = Date.now();
+      return watchSystem.call(Socket);
+    }
+
+    if (Date.now() - lastDiskUsageCheck >= DISK_USAGE_INTERVAL) {
+      lastDiskUsageCheck = Date.now();
+      await Socket.handleDiskUsage();
+    }
+
+    setTimeout(() => Socket.watchSystem(), SYSTEM_WATCH_INTERVAL);
+  };
 };
 
 export class HomebridgeCameraUI {
@@ -44,8 +76,27 @@ export class HomebridgeCameraUI {
     this.config = new Config(config);
     this.cameraUiPath = `${this.api.user.storagePath()}/camera.ui`;
 
-    this.cameraUi = new CameraUI(this.config, this.cameraUiPath, Logger, ENV_OPTIONS);
+    if (this.config.disableCameraUi) {
+      // the camera.ui code used for HomeKit logs through the camera.ui logger, which is created by camera.ui
+      LoggerService.log = Logger.log;
+
+      this.log.info('camera.ui is disabled (no interface, notifications, recordings, prebuffering or video analysis).');
+    } else {
+      this.cameraUi = new CameraUI(this.config, this.cameraUiPath, Logger, ENV_OPTIONS);
+    }
+
     this.handler = new Handler(this.api.hap, this.cameraUi);
+    this.motionPollings = [];
+
+    const servers = ['mqtt', 'http', 'smtp', 'ftp'].filter((server) => this.config[server]?.active);
+
+    if (!this.cameraUi && servers.length > 0) {
+      this.log.warn(`The ${servers.join(', ').toUpperCase()} motion server(s) need camera.ui and are not started.`);
+    }
+
+    if (!this.cameraUi && this.config.atHomeSwitch) {
+      this.log.warn('The At Home Switch needs camera.ui and is not available.');
+    }
 
     for (const camera of this.config.cameras) {
       const device = { ...camera };
@@ -60,12 +111,29 @@ export class HomebridgeCameraUI {
           'Homebridge'
         );
       } else {
+        if (!this.cameraUi) {
+          const unavailable = [
+            device.videoanalysis?.active && 'video analysis',
+            device.prebuffering && 'prebuffering',
+            device.excludeSwitch && 'exclude switch',
+            device.privacySwitch && 'privacy switch',
+          ].filter(Boolean);
+
+          if (unavailable.length > 0) {
+            this.log.warn(`Needs camera.ui and is not available: ${unavailable.join(', ')}`, device.name);
+          }
+
+          // these switches change camera.ui settings
+          device.excludeSwitch = false;
+          device.privacySwitch = false;
+        }
+
         device.subtype = 'camera';
         this.devices.set(uuid, device);
       }
     }
 
-    if (this.config.atHomeSwitch) {
+    if (this.config.atHomeSwitch && this.cameraUi) {
       const name = 'At Home Switch';
       const uuid = this.api.hap.uuid.generate(name);
 
@@ -86,20 +154,37 @@ export class HomebridgeCameraUI {
     }
 
     this.api.on('didFinishLaunching', this.init.bind(this));
-    this.api.on('shutdown', () => this.cameraUi.close());
+    this.api.on('shutdown', () => {
+      this.cameraUi?.close();
 
-    this.cameraUi.on('config', this.changeConfig.bind(this));
-    this.cameraUi.on('addCamera', this.addCamera.bind(this));
-    this.cameraUi.on('removeCamera', this.removeCamera.bind(this));
-    this.cameraUi.on('removeCameras', this.removeCameras.bind(this));
-    this.cameraUi.on('restart', this.restartProcess.bind(this));
+      for (const motionPolling of this.motionPollings) {
+        motionPolling.stop();
+      }
+    });
+
+    this.cameraUi?.on('config', this.changeConfig.bind(this));
+    this.cameraUi?.on('addCamera', this.addCamera.bind(this));
+    this.cameraUi?.on('removeCamera', this.removeCamera.bind(this));
+    this.cameraUi?.on('removeCameras', this.removeCameras.bind(this));
+    this.cameraUi?.on('restart', this.restartProcess.bind(this));
   }
 
   async init() {
-    await this.cameraUi.start();
+    if (this.cameraUi) {
+      await this.cameraUi.start();
+
+      // imported after camera.ui has started, its modules need the camera.ui logger when they are loaded
+      throttleSystemWatcher((await import('camera.ui/src/api/socket.js')).default);
+    }
 
     this.configure();
     this.handler.finishLoading(this.accessories, this.cameraUi);
+
+    for (const device of this.devices.values()) {
+      if (device.motionPolling?.url) {
+        this.motionPollings.push(new MotionPolling(device.name, device.motionPolling, this.handler));
+      }
+    }
   }
 
   configure() {

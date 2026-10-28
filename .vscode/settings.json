@@ -4,12 +4,8 @@
   "editor.insertSpaces": true,
   "files.eol": "\n",
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.eslint": "explicit"
   },
   "editor.formatOnSave": true,
-  "eslint.workingDirectories": [
-    ".", 
-    "./ui",
-    "./homebridge-ui/ui"
-  ]
+  "eslint.workingDirectories": [".", "./ui", "./homebridge-ui/ui"]
 }

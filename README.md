@@ -1,25 +1,22 @@
-> [!IMPORTANT]
-> 🚀 New Version in Development 🚀
->
-> A new version of camera.ui is currently under active development. An initial alpha/beta release and previews are coming soon. Stay tuned for exciting updates!
->
-> Details: https://github.com/seydx/camera.ui/issues/448
-
 <p align="center">
-    <img src="https://github.com/SeydX/homebridge-camera-ui/blob/master/images/logo_hb.png" width="280">
+    <img src="https://github.com/RonaldR/homebridge-camera-ui/blob/master/images/logo_hb.png" width="120">
 </p>
 
-# homebridge-camera-ui
+# homebridge-camera-ui-v2
 
-[![npm](https://img.shields.io/npm/v/homebridge-camera-ui.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-camera-ui)
-[![npm](https://img.shields.io/npm/v/homebridge-camera-ui/beta.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-camera-ui)
-[![npm](https://img.shields.io/npm/dt/homebridge-camera-ui.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-camera-ui)
-[![GitHub last commit](https://img.shields.io/github/last-commit/SeydX/homebridge-camera-ui.svg?style=flat-square)](https://github.com/SeydX/homebridge-camera-ui)
+## Forked from https://github.com/seydx/homebridge-camera-ui
+
+### Made compatible with Homebridge v2
+
+[![npm](https://img.shields.io/npm/v/homebridge-camera-ui-v2.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-camera-ui-v2)
+[![npm](https://img.shields.io/npm/v/homebridge-camera-ui-v2/beta.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-camera-ui-v2)
+[![npm](https://img.shields.io/npm/dt/homebridge-camera-ui-v2.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-camera-ui-v2)
+[![GitHub last commit](https://img.shields.io/github/last-commit/RonaldR/homebridge-camera-ui.svg?style=flat-square)](https://github.com/RonaldR/homebridge-camera-ui)
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 [![Discord](https://img.shields.io/discord/432663330281226270?color=728ED5&logo=discord&label=discord)](https://discord.gg/wFQYHSeXRt)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg?style=flat-square&maxAge=2592000)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NP4T3KASWQLD8)
 
-**homebridge-camera-ui** allows you to expose cameras from [camera.ui](https://github.com/seydx/camera.ui) to HomeKit via Homebridge. camera.ui does not need to be installed separately. It is installed right away with homebridge-camera-ui
+**homebridge-camera-ui-v2** allows you to expose cameras from [camera.ui](https://github.com/seydx/camera.ui) to HomeKit via Homebridge. camera.ui does not need to be installed separately. It is installed right away with homebridge-camera-ui
 
 **camera.ui** is a NVR like PWA to control your RTSP capable cameras with:
 
@@ -38,26 +35,29 @@
 
 and much more...
 
-**Supported Languages:** 
+**Supported Languages:**
 
 :de: | :gb: | :netherlands: | :fr: | :thailand: | :es:
 
-**Demo:** https://streamable.com/3yce42 
+**Demo:** https://streamable.com/3yce42
 
 ## Installation
 
 ```
-sudo npm install -g homebridge-camera-ui@latest
+sudo npm install -g homebridge-camera-ui-v2@latest
 ```
+
+Coming from `homebridge-camera-ui`? Uninstall it first and switch off "Remove plugin config" in the uninstall dialog of the Homebridge UI (it is on by default). Your config, cached accessories and camera.ui database are then kept.
 
 ## Documentation
 
-- [homebridge-camera-ui](#homebridge-camera-ui)
+- [homebridge-camera-ui-v2](#homebridge-camera-ui-v2)
   - [Installation](#installation)
   - [Documentation](#documentation)
   - [Configuration](#configuration)
   - [Defaults](#defaults)
   - [Example Config (minimal)](#example-config-minimal)
+  - [Without camera.ui (HomeKit only)](#without-cameraui-homekit-only)
   - [Usage](#usage)
     - [Dashboard](#dashboard)
     - [Cameras](#cameras)
@@ -76,6 +76,7 @@ sudo npm install -g homebridge-camera-ui@latest
     - [MQTT](#mqtt)
     - [SMTP](#smtp)
     - [FTP](#ftp)
+    - [Motion Polling](#motion-polling)
   - [Image Rekognition](#image-rekognition)
   - [Notifications](#notifications-1)
   - [Supported clients](#supported-clients)
@@ -99,11 +100,9 @@ The database, recordings and a copy of the camera.ui config.json are stored loca
 
 Once you have installed and configured it you can access the interface via http://localhost:8081.
 
-The default username is ``master`` and the default password is ``master``. When you log in for the first time, camera.ui will ask you to change your username and password.
-
+The default username is `master` and the default password is `master`. When you log in for the first time, camera.ui will ask you to change your username and password.
 
 ## Example Config (minimal)
-
 
 ```
 {
@@ -120,13 +119,27 @@ The default username is ``master`` and the default password is ``master``. When 
 
 ```
 
-For a full config.json, please look at [Example Config](https://github.com/SeydX/homebridge-camera-ui/blob/master/example-config.json) for more details.
+For a full config.json, please look at [Example Config](https://github.com/RonaldR/homebridge-camera-ui/blob/master/example-config.json) for more details.
+
+## Without camera.ui (HomeKit only)
+
+If you only need your cameras in HomeKit (incl. HomeKit Secure Video), enable `disableCameraUi`. camera.ui is then not started at all, which saves a lot of memory (about 200 MB) and CPU, useful on e.g. a Raspberry Pi.
+
+Not available without camera.ui: the interface, notifications, recordings on disk, prebuffering, video analysis, the MQTT/HTTP/SMTP/FTP motion servers and the at home, exclude and privacy switches. The plugin logs a warning if you have configured one of them. Use [Motion Polling](#motion-polling) as motion source.
+
+```json
+{
+  "platform": "CameraUI",
+  "disableCameraUi": true,
+  "cameras": [...]
+}
+```
 
 ## Usage
 
 ### Dashboard
 
-The Dashboard is the main page of the interface and offers a variety of widgets to customize it as you like. The widgets will expand over time. At the moment the following widgets are available for the dashboard:  Time, Weather, Uptime, Camera, Notifications, RSS Feed, Status, Charts (CPU Load, CPU Temperature, Memory Load), Shortcuts and Log
+The Dashboard is the main page of the interface and offers a variety of widgets to customize it as you like. The widgets will expand over time. At the moment the following widgets are available for the dashboard: Time, Weather, Uptime, Camera, Notifications, RSS Feed, Status, Charts (CPU Load, CPU Temperature, Memory Load), Shortcuts and Log
 
 <img src="https://github.com/SeydX/camera.ui/blob/master/images/browser/dashboard.png" align="center" alt="camera.ui">
 
@@ -174,7 +187,7 @@ Using the built-in editor you can easily edit your config.json. In addition, any
 
 ### Utilization
 
-"Utilization" shows you a graphical overview of the system utilization.  Here you can see in real time how high the CPU utilization is, how high the CPU temperature is and how much memory is still free.
+"Utilization" shows you a graphical overview of the system utilization. Here you can see in real time how high the CPU utilization is, how high the CPU temperature is and how much memory is still free.
 
 <img src="https://github.com/SeydX/camera.ui/blob/master/images/browser/utilization.png" align="center" alt="camera.ui">
 
@@ -210,7 +223,6 @@ Example:
 
 `http://localhost:8123/motion?My+Camera`
 
-
 ### MQTT
 
 If you have set up the MQTT client (Settings > System > MQTT), you can set the required parameters such as "Motion Topic", "Message" etc. via the interface (Settings > Cameras > MQTT).
@@ -226,7 +238,7 @@ The message can be a simple "string" (e.g. "ON"/"OFF) or a JSON object. If the M
   "id": "test",
   "event": {
     "time": 1234567890,
-    "state": true,
+    "state": true
   }
 }
 ```
@@ -256,6 +268,20 @@ If your camera is able to upload an image when motion is detected, then you can 
 
 Every time the camera tries to connect to the server, the camera.ui detects and takes the entered path to determine the camera.
 
+### Motion Polling
+
+Uses the motion detection of the camera itself by polling a status URL of the camera (every second by default). Motion is detected when the response matches `match` (a regular expression) and is reset after `motionTimeout`. This also works without camera.ui.
+
+Example for Foscam (enable the motion detection on the camera itself, it needs no alarm actions):
+
+```json
+"motionPolling": {
+  "url": "http://<ip>:88/cgi-bin/CGIProxy.fcgi?cmd=getDevState&usr=<user>&pwd=<password>",
+  "match": "<motionDetectAlarm>2</motionDetectAlarm>"
+}
+```
+
+Open the URL in a browser first to check that it works and what the response looks like with and without motion.
 
 ## Image Rekognition
 
@@ -290,8 +316,8 @@ This plugin has been verified to work with the following apps/systems:
 - macOS Catalina 10.15
 - Apple Home
 - All 3rd party apps like Elgato Eve etc
-- Homebridge >= v1.1.6
-- Node >= 14
+- Homebridge >= v2.0.0
+- Node >= 22
 
 ### What you need for HomeKit Secure Video
 
@@ -313,7 +339,7 @@ _MS Internet Explorer (any version) is not supported!_
 
 ## Supported Cameras
 
-Every camera with an RTSP stream! 
+Every camera with an RTSP stream!
 
 See [Tested Cameras](https://sunoo.github.io/homebridge-camera-ffmpeg/configs/) for more info.
 
@@ -332,6 +358,7 @@ You can contribute to this homebridge plugin in following ways:
 - Pull requests are accepted.
 
 ## Troubleshooting
+
 If you have any issues with the plugin then you can run this plugin in debug mode, which will provide some additional information. This might be useful for debugging issues. Just open your config ui and set debug to true!
 
 https://github.com/SeydX/homebridge-camera-ui/wiki/Debug
@@ -339,6 +366,7 @@ https://github.com/SeydX/homebridge-camera-ui/wiki/Debug
 If you have problems with the interface or found bugs, please post it directly at [camera.ui](https://github.com/seydx/camera.ui)
 
 ## Wiki
+
 Before you open a new issue, please read carefully the wiki: https://github.com/seydx/homebridge-camera-ui/wiki
 
 ## License

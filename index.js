@@ -1,7 +1,7 @@
 /**
- * v5
+ * v6
  *
- * @url https://github.com/SeydX/homebridge-camera-ui
+ * @url https://github.com/RonaldR/homebridge-camera-ui
  * @author SeydX <seydx@outlook.de>
  *
  **/
@@ -10,5 +10,5 @@
 import { HomebridgeCameraUI } from './src/platform.js';
 
 export default (api) => {
-  api.registerPlatform('homebridge-camera-ui', 'CameraUI', HomebridgeCameraUI, true);
+  api.registerPlatform('homebridge-camera-ui-v2', 'CameraUI', HomebridgeCameraUI, true);
 };

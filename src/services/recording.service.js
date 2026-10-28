@@ -35,7 +35,7 @@ export default class RecordingDelegate {
 
     const hksvSource = this.accessory.context.config.hksvConfig?.source;
     const videoConfig = cameraUtils.generateVideoConfig(this.accessory.context.config.videoConfig);
-    const controller = this.cameraUi.cameraController.get(this.accessory.displayName);
+    const controller = this.cameraUi?.cameraController.get(this.accessory.displayName);
 
     let prebufferInput = false;
 
@@ -80,8 +80,9 @@ export default class RecordingDelegate {
     let vcodec = this.accessory.context.config.hksvConfig?.vcodec || videoConfig.vcodec;
 
     let audioEnabled = this.accessory.context.config.hksvConfig?.audio || videoConfig.audio;
-    let audioSourceFound = controller?.media.codecs.audio.length;
-    let probeAudio = controller?.media.codecs.audio;
+    // without camera.ui the source is not probed, so rely on the audio setting and transcode the audio
+    let audioSourceFound = controller ? controller.media.codecs.audio.length : true;
+    let probeAudio = controller?.media.codecs.audio || [];
     let incompatibleAudio = audioSourceFound && !probeAudio.some((codec) => compatibleAudio.test(codec));
     //let probeTimedOut = controller?.media.codecs.timedout;
 
@@ -256,7 +257,8 @@ export default class RecordingDelegate {
     }
 
     let pending = [];
-    let filebuffer = Buffer.alloc(0);
+    // concatenated once at the end, concatenating per fragment copies the whole recording over and over
+    const fragments = [];
 
     try {
       for await (const box of this.session.generator) {
@@ -271,7 +273,11 @@ export default class RecordingDelegate {
         if (type === 'moov' || type === 'mdat') {
           const fragment = Buffer.concat(pending);
 
-          filebuffer = Buffer.concat([filebuffer, Buffer.concat(pending)]);
+          // only camera.ui stores the recording
+          if (this.cameraUi) {
+            fragments.push(fragment);
+          }
+
           pending = [];
 
           yield {
@@ -301,9 +307,15 @@ export default class RecordingDelegate {
           this.accessory.displayName,
           'Homebridge'
         );
-      } else if (filebuffer.length > 0) {
+      } else if (fragments.length > 0) {
         this.log.debug('Recording completed (HSV)', this.accessory.displayName);
-        this.cameraUi.eventController.triggerEvent('HSV', this.accessory.displayName, true, filebuffer, 'Video');
+        this.cameraUi.eventController.triggerEvent(
+          'HSV',
+          this.accessory.displayName,
+          true,
+          Buffer.concat(fragments),
+          'Video'
+        );
       }
     }
   }

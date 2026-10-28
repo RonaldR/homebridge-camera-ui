@@ -1,0 +1,78 @@
+# Publishes a new version to npm and creates its GitHub release when the version in package.json changes on master.
+# npm uses trusted publishing (no token): npmjs.com > package settings > Trusted publishing > GitHub Actions,
+# with this repository and the workflow filename "publish.yml".
+
+name: Publish
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: publish
+
+permissions:
+  contents: write # create the GitHub release
+  id-token: write # npm trusted publishing
+
+jobs:
+  publish:
+    if: github.repository == 'RonaldR/homebridge-camera-ui'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Check version
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "Release v$VERSION already exists"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          # trusted publishing needs npm 11.5.1 or newer
+          npm install -g npm@11
+          npm ci --ignore-scripts
+          npm ci --ignore-scripts --prefix homebridge-ui/ui
+
+      - name: Publish to npm
+        if: steps.check.outputs.publish == 'true'
+        env:
+          # the custom UI is built with webpack 4, which needs the legacy OpenSSL provider
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm publish
+
+      - name: Create GitHub release
+        if: steps.check.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          # release notes: the section of this version in CHANGELOG.md
+          awk -v heading="# v$VERSION " 'index($0, heading) == 1 { found = 1; next } found && /^# v/ { exit } found' CHANGELOG.md > notes.md
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --notes-file notes.md

@@ -10,7 +10,7 @@ export default class Handler {
     this.motionTimers = new Map();
 
     //handle motion from mqtt/http/smtp/videoanalysis (passed through camera.ui)
-    this.cameraUi.on('motion', (cameraName, trigger, state, event) => {
+    this.cameraUi?.on('motion', (cameraName, trigger, state, event) => {
       this.handle(trigger, cameraName, state, false, false, event);
     });
 
@@ -121,7 +121,7 @@ export default class Handler {
       motionTrigger?.updateCharacteristic(this.hap.Characteristic.On, active ? true : false);
 
       if (!accessory.context.config.hsv && manual) {
-        this.cameraUi.eventController.triggerEvent('motion', accessory.displayName, active);
+        this.cameraUi?.eventController.triggerEvent('motion', accessory.displayName, active);
       }
 
       if (active) {
@@ -162,7 +162,7 @@ export default class Handler {
 
     if (doorbellSensor) {
       const settingsDatabase = await this.cameraUi?.database?.interface.chain.get('settings').cloneDeep().value();
-      const cameraSettings = settingsDatabase.cameras.find((cam) => cam.name === accessory.displayName);
+      const cameraSettings = settingsDatabase?.cameras.find((cam) => cam.name === accessory.displayName);
 
       const mqttClient = this.cameraUi?.motionController?.mqttClient;
 
@@ -203,7 +203,7 @@ export default class Handler {
       doorbellTrigger?.updateCharacteristic(this.hap.Characteristic.On, active ? true : false);
 
       if (!accessory.context.config.hsv && manual) {
-        this.cameraUi.eventController.triggerEvent('doorbell', accessory.displayName, active);
+        this.cameraUi?.eventController.triggerEvent('doorbell', accessory.displayName, active);
       }
 
       if (active) {

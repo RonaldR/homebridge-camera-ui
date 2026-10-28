@@ -3,6 +3,7 @@ import { HomebridgePluginUiServer, RequestError } from '@homebridge/plugin-ui-ut
 import readline from 'readline';
 import child_process from 'child_process';
 import fs from 'fs-extra';
+import ffmpegPath from 'ffmpeg-for-homebridge';
 
 import * as cameraUtils from 'camera.ui/src/controller/camera/utils/camera.utils.js';
 import { defaultVideoProcess } from 'camera.ui/src/services/config/config.defaults.js';
@@ -41,7 +42,7 @@ class UiServer extends HomebridgePluginUiServer {
     if (Array.isArray(config.platforms)) {
       const cameraUI = config.platforms.find((plugin) => plugin && plugin.platform === 'CameraUI');
 
-      if (cameraUI) {
+      if (cameraUI && !cameraUI.disableCameraUi) {
         const isHttps = Boolean(cameraUI.ssl && cameraUI.ssl.active && cameraUI.ssl.key && cameraUI.ssl.cert);
 
         return {
@@ -71,7 +72,9 @@ class UiServer extends HomebridgePluginUiServer {
           let cameraWidth = videoConfig.maxWidth;
           let rate = videoConfig.maxFPS >= 20 ? videoConfig.maxFPS : 20;
           let videoProcessor =
-            cameraUI.options && cameraUI.options.videoProcessor ? cameraUI.options.videoProcessor : defaultVideoProcess;
+            cameraUI.options && cameraUI.options.videoProcessor
+              ? cameraUI.options.videoProcessor
+              : ffmpegPath || defaultVideoProcess;
 
           await this.probe(camera.name, videoProcessor, camera.videoConfig.source);
 

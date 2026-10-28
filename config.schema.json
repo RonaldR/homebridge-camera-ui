@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "singular": true,
   "customUi": true,
-  "footerDisplay": "For documentation please see [GitHub repository](https://github.com/SeydX/homebridge-camera-ui)",
+  "footerDisplay": "For documentation please see [GitHub repository](https://github.com/RonaldR/homebridge-camera-ui)",
   "schema": {
     "name": {
       "title": "Name",
@@ -20,6 +20,11 @@
       "title": "At Home Switch",
       "type": "boolean",
       "description": "Exposes a 'at home' switch to HomeKit to enable/disable at home for the interface settings within HomeKit."
+    },
+    "disableCameraUi": {
+      "title": "Disable camera.ui",
+      "type": "boolean",
+      "description": "Only exposes the cameras to HomeKit (incl. HomeKit Secure Video), which saves a lot of memory. The camera.ui interface, notifications, recordings, prebuffering, video analysis, the MQTT/HTTP/SMTP/FTP motion servers and the at home, exclude and privacy switches are not available. Use 'Motion Polling' of a camera as motion source."
     },
     "logLevel": {
       "title": "Log Level",
@@ -702,6 +707,29 @@
                 "default": true
               }
             }
+          },
+          "motionPolling": {
+            "title": "Motion Polling",
+            "type": "object",
+            "properties": {
+              "url": {
+                "title": "Status URL",
+                "type": "string",
+                "description": "Uses the motion detection of the camera by polling this url, also without camera.ui. Example for Foscam: http://<ip>:88/cgi-bin/CGIProxy.fcgi?cmd=getDevState&usr=<user>&pwd=<password>"
+              },
+              "match": {
+                "title": "Motion Match",
+                "type": "string",
+                "description": "Motion is detected when the response contains this text (regular expression). Example for Foscam: <motionDetectAlarm>2</motionDetectAlarm>"
+              },
+              "interval": {
+                "title": "Polling Interval",
+                "type": "integer",
+                "description": "Polling interval in seconds (default 1)",
+                "placeholder": 1,
+                "minimum": 1
+              }
+            }
           }
         }
       }
@@ -715,6 +743,7 @@
       "expanded": false,
       "orderable": false,
       "items": [
+        "disableCameraUi",
         "port",
         "logLevel",
         "atHomeSwitch",
@@ -889,6 +918,21 @@
               "items": ["cameras[].videoanalysis.active"],
               "condition": {
                 "functionBody": "return model.cameras[arrayIndices[0]].disable !== true;;"
+              }
+            },
+            {
+              "key": "cameras[]",
+              "type": "section",
+              "title": "Motion Polling",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "cameras[].motionPolling.url",
+                "cameras[].motionPolling.match",
+                "cameras[].motionPolling.interval"
+              ],
+              "condition": {
+                "functionBody": "return model.cameras[arrayIndices[0]].disable !== true;"
               }
             }
           ]

@@ -277,7 +277,7 @@ export default class CameraDelegate {
 
       let input = this.accessory.context.config.videoConfig.stillImageSource.split(/\s+/);
       const startTime = Date.now();
-      const controller = this.cameraUi.cameraController.get(this.accessory.displayName);
+      const controller = this.cameraUi?.cameraController.get(this.accessory.displayName);
 
       if (this.accessory.context.config.prebuffering && controller?.prebuffer) {
         try {
@@ -478,7 +478,7 @@ export default class CameraDelegate {
   }
 
   async startStream(request, callback) {
-    const controller = this.cameraUi.cameraController.get(this.accessory.displayName);
+    const controller = this.cameraUi?.cameraController.get(this.accessory.displayName);
     const sessionInfo = this.pendingSessions.get(request.sessionID);
 
     if (sessionInfo) {
@@ -529,7 +529,8 @@ export default class CameraDelegate {
         }
       }*/
 
-      let audioSourceFound = controller?.media.codecs.audio.length;
+      // without camera.ui the source is not probed, so rely on the audio setting
+      let audioSourceFound = controller ? controller.media.codecs.audio.length : videoConfig.audio;
 
       if (!audioSourceFound) {
         if (videoConfig.audio) {

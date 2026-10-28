@@ -1,6 +1,7 @@
 {
-  "name": "homebridge-camera-ui",
-  "version": "5.0.27",
+  "name": "homebridge-camera-ui-v2",
+  "displayName": "Homebridge Camera UI v2",
+  "version": "6.0.0",
   "description": "User Interface for RTSP capable cameras with HSV support.",
   "author": "SeydX (https://github.com/SeydX/homebridge-camera-ui)",
   "scripts": {
@@ -15,7 +16,7 @@
   "dependencies": {
     "@homebridge/plugin-ui-utils": "^0.0.19",
     "camera.ui": "^1.1.17",
-    "ffmpeg-for-homebridge": "0.0.9",
+    "ffmpeg-for-homebridge": "^2.2.2",
     "fs-extra": "10.1.0",
     "pick-port": "^1.0.0"
   },
@@ -32,27 +33,19 @@
     "prettier": "^2.6.2"
   },
   "bugs": {
-    "url": "https://github.com/SeydX/homebridge-camera-ui/issues"
+    "url": "https://github.com/RonaldR/homebridge-camera-ui/issues"
   },
   "engines": {
-    "node": ">=14.18.2",
-    "homebridge": "^1.4.0"
+    "node": "^22 || ^24 || ^26",
+    "homebridge": "^1.11.0 || ^2.0.0"
   },
   "funding": [
     {
-      "type": "paypal",
-      "url": "https://paypal.me/seydx"
-    },
-    {
       "type": "kofi",
-      "url": "https://ko-fi.com/seydx"
-    },
-    {
-      "type": "github",
-      "url": "https://github.com/sponsors/SeydX"
+      "url": "https://ko-fi.com/r_authentic"
     }
   ],
-  "homepage": "https://github.com/SeydX/homebridge-camera-ui#readme",
+  "homepage": "https://github.com/RonaldR/homebridge-camera-ui#readme",
   "keywords": [
     "camera",
     "homebridge-plugin",
@@ -71,7 +64,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SeydX/homebridge-camera-ui.git"
+    "url": "git+https://github.com/RonaldR/homebridge-camera-ui.git"
   },
   "type": "module"
 }

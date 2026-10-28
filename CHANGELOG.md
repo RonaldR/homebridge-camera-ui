@@ -1,6 +1,24 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# v6.0.0 - 2026-10-28
+
+## Breaking Changes
+- Renamed to `homebridge-camera-ui-v2`, a fork of [homebridge-camera-ui](https://github.com/seydx/homebridge-camera-ui). Uninstall `homebridge-camera-ui` first and switch off "Remove plugin config" in the uninstall dialog of the Homebridge UI (it is on by default). Your config, cached accessories and camera.ui database are then kept
+- Requires Node.js v22 or newer and Homebridge v1.11 or v2
+
+## Notable Changes
+- New `disableCameraUi` option: only exposes the cameras to HomeKit (incl. HSV) without starting camera.ui, which saves about 200 MB of memory
+- New `motionPolling` camera option: uses the motion detection of the camera itself by polling a status url (e.g. Foscam), also without camera.ui
+
+## Bugfixes
+- Updated `ffmpeg-for-homebridge` to v2. The FFmpeg binary bundled with v0.0.9 could no longer be downloaded, which crashed Homebridge (or the child bridge) on fresh installs
+- If the configured video processor no longer exists (e.g. the FFmpeg of the uninstalled `homebridge-camera-ui`), the included FFmpeg is used instead
+
+## Other Changes
+- camera.ui only collects the system stats for its dashboard while the interface is open, the disk space is still checked every 5 minutes (recordings are skipped below 1 GB)
+- HSV recordings are no longer copied over and over in memory while they are being recorded
+
 # v5.0.27 - 2022-04-24
 
 ## Bugfixes
